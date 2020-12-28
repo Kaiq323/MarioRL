@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: MarioRL
+Version: 0.0.1.dev0
+Summary: Mario Reinforcement Learning
+Home-page: UNKNOWN
+Author: Kaise Alnatour
+Author-email: kaiq323@vt.edu
+License: GNU
+Description: This project is my attempt at creating a reinforcement learning agent
+        for Mario.
+Platform: UNKNOWN
+Requires-Python: >=3.5.0
+Description-Content-Type: text/markdown
