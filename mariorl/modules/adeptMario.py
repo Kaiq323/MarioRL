@@ -73,7 +73,7 @@ class AdeptMarioEnv(EnvModule):
         return cls(env, args.frame_stack, args.skip_rate, args.max_episode_length)
 
     def step(self, action):
-        obs, reward, done, info = self.gym_env.step(self._wrap_action(action))
+        obs, reward, done, info = self.gym_env.step(self._wrap_action(action).item())
         return self._wrap_observation(obs), reward, done, info
 
     def reset(self, **kwargs):
