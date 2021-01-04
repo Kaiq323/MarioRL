@@ -14,7 +14,6 @@ class Mario:
         self.use_cuda = torch.cuda.is_available()
         self.gamma = 0.9
         self.loss_fn = torch.nn.SmoothL1Loss()
-
         self.burnin = 1e4 #min. experiences before training
         self.learn_every = 3 #no. of experiences between updates to Q_online
         self.sync_every = 1e4 #no. of experiences between Q_target & Q_online sync

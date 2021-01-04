@@ -23,9 +23,9 @@ class MarioNet(nn.Module):
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3136, 512),
+            nn.Linear(3136, 512), # BODY LAYER 1d
             nn.ReLU(),
-            nn.Linear(512, output_dim)
+            nn.Linear(512, output_dim) # OUTPUT LAYER AUTO
         )
 
         self.target = copy.deepcopy(self.online)

@@ -43,8 +43,6 @@ class AdeptMarioAgent(AgentModule):
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=0.00025)
         self.save_every = 5e5
 
-
-
     @classmethod
     def from_args(
         cls,

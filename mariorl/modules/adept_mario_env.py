@@ -18,7 +18,8 @@ from nes_py.wrappers import JoypadSpace
 from mariorl.modules.preprocess import SkipFrame
 
 MARIO_ENVS = [
-    "SuperMarioBros-1-1-v0"
+    "SuperMarioBros-1-1-v0",
+    "SuperMarioBros-1-2-v0"
 ]
 
 class AdeptMarioEnv(EnvModule):
