@@ -8,11 +8,13 @@ mariorl.egg-info/requires.txt
 mariorl.egg-info/top_level.txt
 mariorl/modules/__init__.py
 mariorl/modules/adeptMarAgent.py
+mariorl/modules/adeptMarioEnv.py
+mariorl/modules/adeptMarioNet.py
+mariorl/modules/adeptMarioReplay.py
 mariorl/modules/agent.py
 mariorl/modules/logger.py
 mariorl/modules/marioNet.py
 mariorl/modules/preprocess.py
 mariorl/scripts/__init__.py
-mariorl/scripts/adeptMario.py
 mariorl/scripts/adeptScript.py
 mariorl/scripts/marioRL.py

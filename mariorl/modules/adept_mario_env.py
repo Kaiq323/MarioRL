@@ -55,7 +55,7 @@ class AdeptMarioEnv(EnvModule):
         )
 
         action_space = Space.from_gym(env.action_space)
-
+        print("action space length: ", action_space['Discrete'][0])
         super(AdeptMarioEnv, self).__init__(
             action_space, cpu_preprocessor, gpu_preprocessor
         )

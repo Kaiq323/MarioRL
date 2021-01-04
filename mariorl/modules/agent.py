@@ -14,6 +14,7 @@ class Mario:
         self.use_cuda = torch.cuda.is_available()
         self.gamma = 0.9
         self.loss_fn = torch.nn.SmoothL1Loss()
+
         self.burnin = 1e4 #min. experiences before training
         self.learn_every = 3 #no. of experiences between updates to Q_online
         self.sync_every = 1e4 #no. of experiences between Q_target & Q_online sync
@@ -72,23 +73,7 @@ class Mario:
 
         Inputs:
         state(LazyFrame),
-        nex    @classmethod
-    def from_args(cls, args, seed, **kwargs):
-        # TODO fix this hack
-        env = gym.make(args.env)
-        if hasattr(env.unwrapped, "ale"):
-            if "FIRE" in env.unwrapped.get_action_meanings():
-                env = FireResetEnv(env)
-            env = NoopResetEnv(env, noop_max=args.noop_max)
-            # env = EpisodicLifeEnv(env)
-        if "NoFrameskip" in args.env:
-            env._max_episode_steps = args.max_episode_length * args.skip_rate
-            env = MaxAndSkipEnv(env, skip=args.skip_rate)
-        else:
-            env._max_episode_steps = args.max_episode_length
-        env.seed(seed)
-        return cls(env, args.frame_stack)
-t_state(LazyFrame),
+        next_state(LazyFrame),
         action(int),
         reward(float),
         done(bool)
