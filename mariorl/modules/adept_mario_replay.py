@@ -99,6 +99,7 @@ class AdeptMarioReplay(ExpModule):
         return namedtuple(self.__class__.__name__, ['importance_sample_weights',
                                                     'next_observation'] +
                           self._keys)(**dict_of_list)
+
     def _sample(self):
         # TODO support burn_in
         # if full indexes may wrap

@@ -7,7 +7,7 @@ if typing.TYPE_CHECKING:
     import torch
     from adept.network import NetworkModule
     from adept.rewardnorm import RewardNormModule
-from collections import deque
+from collections import OrderedDict
 import numpy as np
 from mariorl.modules.adept_mario_net import AdeptMarioNet
 from mariorl.modules.adept_mario_replay import AdeptMarioReplay
@@ -16,32 +16,16 @@ class AdeptMarioAgent(AgentModule):
     # You will be prompted for these when training script starts
     args = {"example_arg1": True, "example_arg2": 5}
 
-    def __init__(self, reward_normalizer, action_space, spec_builder, state_dim):
+    def __init__(self, reward_normalizer, action_space, spec_builder,
+                 exp_size, exp_min_size, exp_update_rate, rollout_len,
+                 discount, nb_env, return_scale):
         super(AdeptMarioAgent, self).__init__(
             reward_normalizer, action_space,
         )
-        self.state_dim = state_dim
-        self.action_dim = action_space['Discrete'][0]
-        self.save_dir = "~/Documents/marioRL/mariorl/logs/"
-        self.memory = AdeptMarioReplay.from_args(spec_builder)
-        self.batch_size = 32
-        self.use_cuda = torch.cuda.is_available()
-        self.gamma = 0.9
-        self.loss_fn = torch.nn.SmoothL1Loss()
-        self.burn_in = 1e4 #min experiences before training
-        self.learn_every = 3 #no. experiences between updates to Q_online
-        self.sync_every = 1e4 #no. of experiences between Q_target and Q_online sync
+        self._exp_cache = AdeptMarioReplay(spec_builder,exp_size, exp_min_size,
+                                           rollout_len, exp_update_rate)
 
-        self.net = AdeptMarioNet(self.state_dim, self.action_dim).float()
-        if self.use_cuda:
-            self.net = self.net.to(device="cuda")
 
-        self.exploration_rate = 1
-        self.exploration_rate_decay = 0.99999975
-        self.exploration_rate_min = 0.1
-        self.curr_step = 0
-        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=0.00025)
-        self.save_every = 5e5
 
     @classmethod
     def from_args(
@@ -84,10 +68,21 @@ class AdeptMarioAgent(AgentModule):
         self.optimizer.step()
         return loss.item()
 
-    def compute_action_exp(
-            self, predictions, internals, obs, available_actions
-    ):
-        raise NotImplementedError
+    def _get_qvals_from_pred(self, preds):
+        return preds
+
+    def _action_from_q_values(self, q_vals):
+        return q_vals.argmax(dim=-1, keepdim=True)
+
+    def _get_action_values(self, q_vals, action, batch_size=0):
+        return q_vals.gather(1, action)
+
+    def _values_to_tensor(self, values):
+        return torch.cat(values, dim=1)
+
+    def compute_action_exp(self, predictions, internals, obs,
+                           available_actions):
+
 
     def learn_step(self, updater, network, next_obs, internals):
         #normalize rewards
