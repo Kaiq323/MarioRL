@@ -2,92 +2,93 @@ import typing
 import random
 from typing import Dict, Tuple
 from adept.agent import AgentModule
-from adept.scripts.local import parse_args, main
-if typing.TYPE_CHECKING:
-    import torch
-    from adept.network import NetworkModule
-    from adept.rewardnorm import RewardNormModule
-from collections import OrderedDict
+import torch
+from adept.rewardnorm import RewardNormModule
 import numpy as np
-from mariorl.modules.adept_mario_net import AdeptMarioNet
 from mariorl.modules.adept_mario_replay import AdeptMarioReplay
+from mariorl.modules.adept_mario_actor import AdeptMarioActor
+from mariorl.modules.adept_mario_learner import AdeptMarioLearner
+
 
 class AdeptMarioAgent(AgentModule):
     # You will be prompted for these when training script starts
-    args = {"example_arg1": True, "example_arg2": 5}
+    args = {
+        **AdeptMarioReplay.args,
+        **AdeptMarioActor.args,
+        **AdeptMarioLearner.args,
+    }
 
-    def __init__(self, reward_normalizer, action_space, spec_builder,
-                 exp_size, exp_min_size, exp_update_rate, rollout_len,
-                 discount, nb_env, return_scale):
+    def __init__(
+        self,
+        reward_normalizer,
+        action_space,
+        spec_builder,
+        exp_size,
+        exp_min_size,
+        exp_update_rate,
+        rollout_len,
+        discount,
+        nb_env,
+        return_scale,
+        double_dqn,
+    ):
         super(AdeptMarioAgent, self).__init__(
-            reward_normalizer, action_space,
+            reward_normalizer,
+            action_space,
         )
-        self._exp_cache = AdeptMarioReplay(spec_builder,exp_size, exp_min_size,
-                                           rollout_len, exp_update_rate)
-
-
+        self._exp_cache = AdeptMarioReplay(
+            spec_builder, exp_size, exp_min_size, rollout_len, exp_update_rate
+        )
+        self._actor = AdeptMarioActor(action_space, nb_env)
+        self._learner = AdeptMarioLearner(
+            reward_normalizer, discount, return_scale, double_dqn
+        )
 
     @classmethod
     def from_args(
-        cls,
-        args,
-        reward_normalizer: RewardNormModule,
-        action_space: Dict[str, Tuple[int, ...]],
-        spec_builder,
-        **kwargs
+        cls, args, reward_normalizer, action_space, spec_builder, **kwargs
     ):
-        pass
+        return cls(
+            reward_normalizer,
+            action_space,
+            spec_builder,
+            exp_size=args.exp_size,
+            exp_min_size=args.exp_min_size,
+            rollout_len=args.rollout_len,
+            exp_update_rate=args.exp_update_rate,
+            discount=args.discount,
+            nb_env=args.nb_env,
+            return_scale=args.return_scale,
+            double_dqn=args.double_dqn,
+        )
 
-    def recall(self):
-        """
-        Retrieve a batch of experiences from memory
-        """
-        batch = random.sample(self.memory, self.batch_size)
-        state, next_state, action, reward, done = map(torch.stack, zip(*batch))
-        return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
+    @property
+    def exp_cache(self):
+        return self._exp_cache
 
-    def td_estimate(self, state, action):
-        current_Q = self.net(state, model="online")[
-            np.arange(0, self.batch_size), action
-        ]  # Q_online(s, a)
-        return current_Q
+    @classmethod
+    def _exp_spec(cls, exp_len, batch_sz, obs_space, act_space, internal_space):
+        return AdeptMarioActor._exp_spec(
+            exp_len, batch_sz, obs_space, act_space, internal_space
+        )
 
-    @torch.no_grad()
-    def td_target(self, reward, next_state, done):
-        next_state_Q = self.net(next_state, model="online")
-        best_action = torch.argmax(next_state_Q, axis=1)
-        next_Q = self.net(next_state, model="target")[
-            np.arange(0, self.batch_size), best_action
-        ]
-        return (reward + (1 - done.float()) * self.gamma * next_Q).float()
+    @staticmethod
+    def output_space(action_space):
+        return AdeptMarioActor.output_space(action_space)
 
-    def update_Q_online(self, td_estimate, td_target):
-        loss = self.loss_fn(td_estimate, td_target)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        return loss.item()
+    def act(self, network, obs, prev_internals):
+        with torch.no_grad():
+            return super().act(network, obs, prev_internals)
 
-    def _get_qvals_from_pred(self, preds):
-        return preds
-
-    def _action_from_q_values(self, q_vals):
-        return q_vals.argmax(dim=-1, keepdim=True)
-
-    def _get_action_values(self, q_vals, action, batch_size=0):
-        return q_vals.gather(1, action)
-
-    def _values_to_tensor(self, values):
-        return torch.cat(values, dim=1)
-
-    def compute_action_exp(self, predictions, internals, obs,
-                           available_actions):
-
+    def compute_action_exp(
+        self, predictions, internals, obs, available_actions
+    ):
+        with torch.no_grad():
+            return self._actor.compute_action_exp(
+                predictions, internals, obs, available_actions
+            )
 
     def learn_step(self, updater, network, next_obs, internals):
-        #normalize rewards
-
-
-        #Sample from memory
-        state, next_state
-        pass
+        return self._learner.learn_step(
+            updater, network, self.exp_cache.read(), next_obs, internals
+        )

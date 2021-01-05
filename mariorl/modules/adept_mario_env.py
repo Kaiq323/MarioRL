@@ -17,10 +17,8 @@ from adept.env.base.env_module import EnvModule
 from nes_py.wrappers import JoypadSpace
 from mariorl.modules.preprocess import SkipFrame
 
-MARIO_ENVS = [
-    "SuperMarioBros-1-1-v0",
-    "SuperMarioBros-1-2-v0"
-]
+MARIO_ENVS = ["SuperMarioBros-1-1-v0", "SuperMarioBros-1-2-v0"]
+
 
 class AdeptMarioEnv(EnvModule):
 
@@ -33,8 +31,8 @@ class AdeptMarioEnv(EnvModule):
     ids = MARIO_ENVS
 
     def __init__(self, env, do_frame_stack, skip_rate, max_episode_length):
-        #Define the preprocessing operations to be performed on observation
-        #CPU OPS
+        # Define the preprocessing operations to be performed on observation
+        # CPU OPS
         cpu_ops = [
             FromNumpy("Box", "Box"),
             GrayScaleAndMoveChannel("Box", "Box"),
@@ -48,7 +46,7 @@ class AdeptMarioEnv(EnvModule):
             Space.dtypes_from_gym(env.observation_space),
         )
 
-        #GPU OPS
+        # GPU OPS
         gpu_preprocessor = GPUPreprocessor(
             [CastToFloat("Box", "Box"), Divide("Box", "Box", 255)],
             cpu_preprocessor.observation_space,
@@ -56,7 +54,7 @@ class AdeptMarioEnv(EnvModule):
         )
 
         action_space = Space.from_gym(env.action_space)
-        print("action space length: ", action_space['Discrete'][0])
+        print("action space length: ", action_space["Discrete"][0])
         super(AdeptMarioEnv, self).__init__(
             action_space, cpu_preprocessor, gpu_preprocessor
         )
@@ -71,10 +69,14 @@ class AdeptMarioEnv(EnvModule):
         env = SkipFrame(env, skip=args.skip_rate)
         env._max_episode_steps = args.max_episode_length
         env.seed(seed)
-        return cls(env, args.frame_stack, args.skip_rate, args.max_episode_length)
+        return cls(
+            env, args.frame_stack, args.skip_rate, args.max_episode_length
+        )
 
     def step(self, action):
-        obs, reward, done, info = self.gym_env.step(self._wrap_action(action).item())
+        obs, reward, done, info = self.gym_env.step(
+            self._wrap_action(action).item()
+        )
         return self._wrap_observation(obs), reward, done, info
 
     def reset(self, **kwargs):
@@ -93,11 +95,12 @@ class AdeptMarioEnv(EnvModule):
         if isinstance(space, spaces.Box):
             return self.cpu_preprocessor({"Box": observation.copy()})
         elif isinstance(space, spaces.Discrete):
-            #onehot encode net1d inputs
+            # onehot encode net1d inputs
             longs = torch.from_numpy(observation)
             if longs.dim() > 2:
                 raise ValueError(
-                    "observation is not net1d, too many dims: " + str(longs.dim())
+                    "observation is not net1d, too many dims: "
+                    + str(longs.dim())
                 )
             elif len(longs.dim()) == 1:
                 longs = longs.unsqueeze(1)

@@ -2,26 +2,31 @@ import torch
 from pathlib import Path
 import datetime
 from gym.wrappers import FrameStack
-#NES Emulator
+
+# NES Emulator
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
-from mariorl.modules.preprocess import SkipFrame, GrayScaleObservation, \
-    ResizeObservation
+from mariorl.modules.preprocess import (
+    SkipFrame,
+    GrayScaleObservation,
+    ResizeObservation,
+)
 from mariorl.modules.agent import Mario
 from mariorl.modules.logger import MetricLogger
 import numpy as np
-np.seterr(over='ignore')
-#SETTING UP ENV
-env =  gym_super_mario_bros.make("SuperMarioBros-1-1-v0")
 
-#Limit action space to
+np.seterr(over="ignore")
+# SETTING UP ENV
+env = gym_super_mario_bros.make("SuperMarioBros-1-1-v0")
+
+# Limit action space to
 # 0. walk right
 # 1. walk left
 env = JoypadSpace(env, [["right"], ["right", "A"]])
 env.reset()
 next_state, reward, done, info = env.step(action=0)
 
-#Apply Wrappers to environment
+# Apply Wrappers to environment
 env = SkipFrame(env, skip=4)
 env = GrayScaleObservation(env)
 env = ResizeObservation(env, shape=84)
@@ -30,10 +35,14 @@ use_cuda = torch.cuda.is_available()
 print(f"Using CUDA: {use_cuda}")
 print()
 
-save_dir = Path("checkpoints") / datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
+save_dir = Path("checkpoints") / datetime.datetime.now().strftime(
+    "%Y-%m-%dT%H-%M-%S"
+)
 save_dir.mkdir(parents=True)
 print("length of action space: ", env.action_space.n)
-mario = Mario(state_dim=(4, 84, 84), action_dim=env.action_space.n, save_dir=save_dir)
+mario = Mario(
+    state_dim=(4, 84, 84), action_dim=env.action_space.n, save_dir=save_dir
+)
 
 logger = MetricLogger(save_dir)
 

@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+
 # https://github.com/kennethreitz/setup.py/blob/master/setup.py
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -24,7 +25,7 @@ setup(
         "torchvision",
         "nes_py",
         "gym_super_mario_bros",
-        "adeptRL>=0.2.0"
+        "adeptRL>=0.2.0",
     ],
     include_package_data=True,
 )

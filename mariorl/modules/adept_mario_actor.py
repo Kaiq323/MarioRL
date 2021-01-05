@@ -7,12 +7,20 @@ from adept.actor.base.actor_module import ActorModule
 
 class AdeptMarioActor(ActorModule):
     args = {}
+
     def __init__(self, action_space, nb_env):
         super().__init__(action_space)
-        #use ape-x epsilon
-        self.epsilon = 0.4 ** (1+((torch.arange(nb_env, dtype = torch.float,
-                                                requires_grad=False) /
-                                   (nb_env - 1)) * 7))
+        # use ape-x epsilon
+        self.epsilon = 0.4 ** (
+            1
+            + (
+                (
+                    torch.arange(nb_env, dtype=torch.float, requires_grad=False)
+                    / (nb_env - 1)
+                )
+                * 7
+            )
+        )
 
     @classmethod
     def from_args(cls, args, action_space):
@@ -33,36 +41,39 @@ class AdeptMarioActor(ActorModule):
         values = []
         for key in self.action_keys:
             # random action across some environments based on the actors epsilon
-            rand_mask = (self.epsilon > torch.rand(
-                batch_size)).nonzero().squeeze(-1)
+            rand_mask = (
+                (self.epsilon > torch.rand(batch_size)).nonzero().squeeze(-1)
+            )
             action = self._action_from_q_values(q_vals[key])
-            rand_act = torch.randint(self.action_space[key][0],
-                                     (rand_mask.shape[0], 1),
-                                     dtype=torch.long).to(action.device)
+            rand_act = torch.randint(
+                self.action_space[key][0],
+                (rand_mask.shape[0], 1),
+                dtype=torch.long,
+            ).to(action.device)
             action[rand_mask] = rand_act
             actions[key] = action.squeeze(1).cpu()
             actions_gpu[key] = action
 
             values.append(
-                self._get_action_values(q_vals[key], action, batch_size))
+                self._get_action_values(q_vals[key], action, batch_size)
+            )
 
         values = self._values_to_tensor(values)
         internals = {k: torch.stack(vs) for k, vs in internals.items()}
 
-        return actions, {'actions': actions_gpu,
-                         'internals': internals
-                         }
+        return actions, {"actions": actions_gpu, "internals": internals}
 
     @classmethod
     def _exp_spec(cls, exp_len, batch_sz, obs_space, act_space, internal_space):
         act_key_len = len(act_space.keys())
         internal_spec = {
-            k: (exp_len, batch_sz, *shape) for k, shape in internal_space.items()
+            k: (exp_len, batch_sz, *shape)
+            for k, shape in internal_space.items()
         }
 
         spec = {
-            'actions': (exp_len, batch_sz, act_key_len, 1),
-            'internals': internal_spec
+            "actions": (exp_len, batch_sz, act_key_len, 1),
+            "internals": internal_spec,
         }
         return spec
 
@@ -77,4 +88,3 @@ class AdeptMarioActor(ActorModule):
 
     def _values_to_tensor(self, values):
         return torch.cat(values, dim=1)
-

@@ -9,10 +9,10 @@ import numpy as np
 class AdeptMarioReplay(ExpModule):
 
     args = {
-        'exp_size': 15625,
-        'exp_min_size': 200,
-        'rollout_len': 32,
-        'exp_update_rate': 1
+        "exp_size": 15625,
+        "exp_min_size": 200,
+        "rollout_len": 32,
+        "exp_update_rate": 1,
     }
 
     def __init__(self, spec_builder, size, min_size, rollout_len, update_rate):
@@ -33,17 +33,20 @@ class AdeptMarioReplay(ExpModule):
         self._update_rate = update_rate
         self._minsize = min_size
         self._next_idx = 0
-        self._keys = ['observations', 'rewards', 'terminals'] + self.keys
+        self._keys = ["observations", "rewards", "terminals"] + self.keys
 
         self.rollout_len = rollout_len
-        self.device = 'cpu'
+        self.device = "cpu"
         self.target_device = self.device
 
     @classmethod
     def from_args(cls, args, spec_builder):
         return cls(
-            spec_builder, args.exp_size, args.exp_min_size,
-            args.rollout_len, args.exp_update_rate
+            spec_builder,
+            args.exp_size,
+            args.exp_min_size,
+            args.rollout_len,
+            args.exp_update_rate,
         )
 
     def __len__(self):
@@ -80,25 +83,27 @@ class AdeptMarioReplay(ExpModule):
         # when index wraps exp is full
         if self._next_idx == 0:
             self._full = True
-        dict_at_ind['observations'] = {k: v.cpu() for k, v in obs.items()}
-        dict_at_ind['rewards'] = rewards.cpu()
-        dict_at_ind['terminals'] = terminals.cpu()
+        dict_at_ind["observations"] = {k: v.cpu() for k, v in obs.items()}
+        dict_at_ind["rewards"] = rewards.cpu()
+        dict_at_ind["terminals"] = terminals.cpu()
 
     def read(self):
         exp_list, last_obs, is_weights = self._sample()
-        exp_dev_list = [self._exp_to_dev(e, self.target_device) for
-                        e in exp_list]
+        exp_dev_list = [
+            self._exp_to_dev(e, self.target_device) for e in exp_list
+        ]
         # will be list of dicts, convert to dict of lists
         dict_of_list = listd_to_dlist(exp_dev_list)
         # get next obs
-        dict_of_list['next_observation'] = last_obs
+        dict_of_list["next_observation"] = last_obs
         # importance sampling weights
-        dict_of_list['importance_sample_weights'] = is_weights
+        dict_of_list["importance_sample_weights"] = is_weights
 
         # return named tuple
-        return namedtuple(self.__class__.__name__, ['importance_sample_weights',
-                                                    'next_observation'] +
-                          self._keys)(**dict_of_list)
+        return namedtuple(
+            self.__class__.__name__,
+            ["importance_sample_weights", "next_observation"] + self._keys,
+        )(**dict_of_list)
 
     def _sample(self):
         # TODO support burn_in
@@ -113,15 +118,20 @@ class AdeptMarioReplay(ExpModule):
             last_index = int((end_index) % self._maxsize)
             indexes = (np.arange(index, end_index) % self._maxsize).astype(int)
         else:
-            #sample an index and get the next sequential samples of len rollout_len
-            index = random.randint(0, len(self._storage) - (self.rollout_len + 1))
+            # sample an index and get the next sequential samples of len rollout_len
+            index = random.randint(
+                0, len(self._storage) - (self.rollout_len + 1)
+            )
             end_index = index + self.rollout_len
             indexes = list(range(index, end_index))
             # range is exclusive of end so last index == end_index
             last_index = end_index
         weights = np.ones(self.rollout_len)
-        return itemgetter(*indexes)(self._storage), \
-               self._storage[last_index]['observations'], weights
+        return (
+            itemgetter(*indexes)(self._storage),
+            self._storage[last_index]["observations"],
+            weights,
+        )
 
     def to(self, device):
         self.target_device = device
@@ -132,3 +142,5 @@ class AdeptMarioReplay(ExpModule):
             return self._next_idx % self._update_rate == 0
         return False
 
+    def clear(self):
+        pass

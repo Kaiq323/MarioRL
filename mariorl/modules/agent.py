@@ -4,6 +4,7 @@ import random
 import torch
 from mariorl.modules.marioNet import MarioNet
 
+
 class Mario:
     def __init__(self, state_dim, action_dim, save_dir):
         self.state_dim = state_dim
@@ -14,12 +15,14 @@ class Mario:
         self.use_cuda = torch.cuda.is_available()
         self.gamma = 0.9
         self.loss_fn = torch.nn.SmoothL1Loss()
-        self.burnin = 1e4 #min. experiences before training
-        self.learn_every = 3 #no. of experiences between updates to Q_online
-        self.sync_every = 1e4 #no. of experiences between Q_target & Q_online sync
+        self.burnin = 1e4  # min. experiences before training
+        self.learn_every = 3  # no. of experiences between updates to Q_online
+        self.sync_every = (
+            1e4  # no. of experiences between Q_target & Q_online sync
+        )
 
-        #Mario's DNN to predict the most optimal action - we implement this
-        #in the Learn section
+        # Mario's DNN to predict the most optimal action - we implement this
+        # in the Learn section
         self.net = MarioNet(self.state_dim, self.action_dim).float()
         if self.use_cuda:
             self.net = self.net.to(device="cuda")
@@ -30,22 +33,22 @@ class Mario:
         self.curr_step = 0
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=0.00025)
 
-        self.save_every = 5e5 # no. of experiences between saving MarioNet
+        self.save_every = 5e5  # no. of experiences between saving MarioNet
 
     def act(self, state):
         """
-    Given a state, choose an epsilon-greedy action and update value of step.
+        Given a state, choose an epsilon-greedy action and update value of step.
 
-    Inputs:
-    state(LazyFrame): a single observation of the current,dimension is (state_dim)
-    Outputs:
-    action_idx(int): An integer representing which action mario will perfom
-    """
-        #EXPLORE
+        Inputs:
+        state(LazyFrame): a single observation of the current,dimension is (state_dim)
+        Outputs:
+        action_idx(int): An integer representing which action mario will perfom
+        """
+        # EXPLORE
         if np.random.rand() < self.exploration_rate:
             action_idx = np.random.randint(self.action_dim)
 
-        #EXPLOIT
+        # EXPLOIT
         else:
             state = state.__array__()
             if self.use_cuda:
@@ -56,15 +59,15 @@ class Mario:
             action_values = self.net(state, model="online")
             action_idx = torch.argmax(action_values, axis=1).item()
 
-        #decrease exploration_rate
+        # decrease exploration_rate
         self.exploration_rate *= self.exploration_rate_decay
-        self.exploration_rate = max(self.exploration_rate_min, self.exploration_rate)
+        self.exploration_rate = max(
+            self.exploration_rate_min, self.exploration_rate
+        )
 
-        #increment step
+        # increment step
         self.curr_step += 1
         return action_idx
-
-
 
     def cache(self, state, next_state, action, reward, done):
         """
@@ -93,7 +96,15 @@ class Mario:
             reward = torch.tensor([reward])
             done = torch.tensor([done])
 
-        self.memory.append((state, next_state, action, reward, done,))
+        self.memory.append(
+            (
+                state,
+                next_state,
+                action,
+                reward,
+                done,
+            )
+        )
 
     def recall(self):
         """
@@ -101,12 +112,18 @@ class Mario:
         """
         batch = random.sample(self.memory, self.batch_size)
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
-        return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
+        return (
+            state,
+            next_state,
+            action.squeeze(),
+            reward.squeeze(),
+            done.squeeze(),
+        )
 
     def td_estimate(self, state, action):
         current_Q = self.net(state, model="online")[
             np.arange(0, self.batch_size), action
-        ] #Q_online(s, a)
+        ]  # Q_online(s, a)
         return current_Q
 
     @torch.no_grad()
@@ -130,10 +147,14 @@ class Mario:
 
     def save(self):
         save_path = (
-            self.save_dir / f"mario_net_{int(self.curr_step // self.save_every)}.chkpt"
+            self.save_dir
+            / f"mario_net_{int(self.curr_step // self.save_every)}.chkpt"
         )
         torch.save(
-            dict(model=self.net.state_dict(), exploration_rate=self.exploration_rate),
+            dict(
+                model=self.net.state_dict(),
+                exploration_rate=self.exploration_rate,
+            ),
             save_path,
         )
         print(f"MarioNet saved to {save_path} at step {self.curr_step}")
@@ -149,16 +170,16 @@ class Mario:
         if self.curr_step % self.learn_every != 0:
             return None, None
 
-        #Sample from memory
+        # Sample from memory
         state, next_state, action, reward, done = self.recall()
 
-        #Get TD Estimate
+        # Get TD Estimate
         td_est = self.td_estimate(state, action)
 
-        #Get TD Target
+        # Get TD Target
         td_tgt = self.td_target(reward, next_state, done)
 
-        #Backpropogate loss through Q_online
+        # Backpropogate loss through Q_online
         loss = self.update_Q_online(td_est, td_tgt)
 
         return (td_est.mean().item(), loss)

@@ -2,9 +2,10 @@ import numpy as np
 import time, datetime
 import matplotlib.pyplot as plt
 
+
 class MetricLogger:
     def __init__(self, save_dir):
-        self.save_log= save_dir / "log"
+        self.save_log = save_dir / "log"
         with open(self.save_log, "w") as f:
             f.write(
                 f"{'Episode':>8}{'Step':>8}{'Epsilon':>10}{'MeanReward':>15}"
@@ -16,22 +17,22 @@ class MetricLogger:
         self.ep_avg_losses_plot = save_dir / "loss_plot.jpg"
         self.ep_avg_qs_plot = save_dir / "q_plot.jpg"
 
-        #History metrics
+        # History metrics
         self.ep_rewards = []
         self.ep_lengths = []
         self.ep_avg_losses = []
         self.ep_avg_qs = []
 
-        #Moving averages, added for every call to record()
+        # Moving averages, added for every call to record()
         self.moving_avg_ep_rewards = []
         self.moving_avg_ep_lengths = []
         self.moving_avg_ep_avg_losses = []
         self.moving_avg_ep_avg_qs = []
 
-        #Current episode metric
+        # Current episode metric
         self.init_episode()
 
-        #Timing
+        # Timing
         self.record_time = time.time()
 
     def log_step(self, reward, loss, q):
@@ -50,8 +51,10 @@ class MetricLogger:
             ep_avg_loss = 0
             ep_avg_q = 0
         else:
-            ep_avg_loss = np.round(self.curr_ep_loss / self.curr_ep_loss_length, 5)
-            ep_avg_q =np.round(self.curr_ep_q / self.curr_ep_loss_length, 5)
+            ep_avg_loss = np.round(
+                self.curr_ep_loss / self.curr_ep_loss_length, 5
+            )
+            ep_avg_q = np.round(self.curr_ep_q / self.curr_ep_loss_length, 5)
         self.ep_avg_losses.append(ep_avg_loss)
         self.ep_avg_qs.append(ep_avg_q)
 
@@ -76,7 +79,9 @@ class MetricLogger:
 
         last_record_time = self.record_time
         self.record_time = time.time()
-        time_since_last_record = np.round(self.record_time - last_record_time, 3)
+        time_since_last_record = np.round(
+            self.record_time - last_record_time, 3
+        )
 
         print(
             f"Episode {episode} - "
@@ -98,7 +103,12 @@ class MetricLogger:
                 f"{time_since_last_record:15.3f}"
                 f"{datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'):>20}\n"
             )
-        for metric in ["ep_rewards", "ep_lengths", "ep_avg_losses", "ep_avg_qs"]:
+        for metric in [
+            "ep_rewards",
+            "ep_lengths",
+            "ep_avg_losses",
+            "ep_avg_qs",
+        ]:
             plt.plot(getattr(self, f"moving_avg_{metric}"))
             plt.savefig(getattr(self, f"{metric}_plot"))
             plt.clf()
