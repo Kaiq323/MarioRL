@@ -8,14 +8,14 @@ import numpy as np
 from mariorl.modules.adept_mario_replay import AdeptMarioReplay
 from mariorl.modules.adept_mario_actor import AdeptMarioActor
 from mariorl.modules.adept_mario_learner import AdeptMarioLearner
-
+from mariorl.modules.dqn_learner import DQNReplayLearner
 
 class AdeptMarioAgent(AgentModule):
     # You will be prompted for these when training script starts
     args = {
         **AdeptMarioReplay.args,
         **AdeptMarioActor.args,
-        **AdeptMarioLearner.args,
+        **DQNReplayLearner.args,
     }
 
     def __init__(
@@ -40,7 +40,7 @@ class AdeptMarioAgent(AgentModule):
             spec_builder, exp_size, exp_min_size, rollout_len, exp_update_rate
         )
         self._actor = AdeptMarioActor(action_space, nb_env)
-        self._learner = AdeptMarioLearner(
+        self._learner = DQNReplayLearner(
             reward_normalizer, discount, return_scale, double_dqn
         )
 
@@ -83,7 +83,6 @@ class AdeptMarioAgent(AgentModule):
     def compute_action_exp(
         self, predictions, internals, obs, available_actions
     ):
-        with torch.no_grad():
             return self._actor.compute_action_exp(
                 predictions, internals, obs, available_actions
             )

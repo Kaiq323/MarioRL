@@ -24,8 +24,9 @@ class AdeptMarioReplay(ExpModule):
 
         self.spec = spec_builder(rollout_len)
         self.obs_keys = spec_builder.obs_keys
+        self.exp_keys = spec_builder.exp_keys
         self.key_types = spec_builder.key_types
-        self.keys = spec_builder.exp_keys
+        self.keys = self.exp_keys
 
         self._storage = []
         self._full = False

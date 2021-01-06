@@ -73,23 +73,23 @@ class AdeptMarioLearner(LearnerModule):
                 ).items():
                     internals[k][i] = v
 
-            # estimate value for next state
-            last_values = self.compute_estimated_values(
-                network, network, next_obs, internals
-            )
+        # estimate value for next state
+        last_values = self.compute_estimated_values(
+            network, network, next_obs, internals
+        )
 
-            # compute nstep return and advantage over batch
-            batch_values = torch.stack(batch_values)
-            value_targets = self.compute_returns(
-                last_values, rewards, experiences.terminals
-            )
+        # compute nstep return and advantage over batch
+        batch_values = torch.stack(batch_values)
+        value_targets = self.compute_returns(
+            last_values, rewards, experiences.terminals
+        )
 
-            # batched loss
-            value_loss = self.loss_fn(batch_values, value_targets)
+        # batched loss
+        value_loss = self.loss_fn(batch_values, value_targets)
 
-            losses = {"value_loss": value_loss.mean()}
-            metrics = {}
-            return losses, metrics
+        losses = {"value_loss": value_loss.mean()}
+        metrics = {}
+        return losses, metrics
 
     def loss_fn(self, batch_values, value_targets):
         return 0.5 * (value_targets - batch_values).pow(2)
